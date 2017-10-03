@@ -21,7 +21,7 @@ set.seed(76)
 
 # Collaboration
 
-Please indicate who you collaborated with on this assignment:
+Please indicate who you collaborated with on this assignment: N/A
 
 
 # Load packages, data, model formulas
@@ -38,7 +38,7 @@ credit <- read_csv("http://www-bcf.usc.edu/~gareth/ISL/Credit.csv") %>%
 You will train the following 7 models on `credit_train`...
 
 ```{r}
-model <- list()
+model <- list() # Store all 7 models in a list
 model[[1]] <- as.formula("Balance ~ 1")
 model[[2]] <- as.formula("Balance ~ Income")
 model[[3]]<- as.formula("Balance ~ Income + Limit")
@@ -60,7 +60,7 @@ credit_test <- credit %>%
 
 
 ```{r}
-RMSE <- function(x) {
+RMSE <- function(x) { # simple function for RMSE
   r <- sqrt(mean(x)^2)
   return(r)
 }
@@ -69,22 +69,20 @@ RMSE <- function(x) {
 ```{r}
 RMSE_train <- runif(n=7)
 RMSE_test <- runif(n=7)
-RMSE_total <- data.frame(test =RMSE_test, train = RMSE_train)
-f <- function(list)  {
-  for (i in 1:7) {
-    RMSE_test[i] <- RMSE(predict(lm(model[[i]],data=credit_train),credit_test))
-    RMSE_train[i] <- RMSE(predict(lm(model[[i]],data=credit_train),credit_train))
-    RMSE_total[i,1] <- RMSE_test[i]
-    RMSE_total[i,2] <- RMSE_train[i]
-  }
-  return(RMSE_total)
-}
+RMSE_total <- data.frame(num_coefficients = 1:7, RMSE_test, RMSE_train) # Create data frame to store values since we can only return 1 in a function
 
-RMSE(predict(lm(model[[2]],data=credit_train),credit_test))
-RMSE(predict(lm(model[[2]],data=credit_train),credit_train))      
-f(z)
-lm(model[[4]],data=credit)
-z <- unlist(model)
+f <- function(list)  {
+  for (i in 1:7) { # predict and calcualte RMSE for all 7 models
+    RMSE_test[i] <- RMSE(predict(lm(list[[i]],data=credit_train),credit_test)) # Store test RMSE
+    RMSE_train[i] <- RMSE(predict(lm(list[[i]],data=credit_train),credit_train)) # Store train RMSE 
+    RMSE_total[i,2] <- RMSE_test[i] # Add to data frame
+    RMSE_total[i,3] <- RMSE_train[i]
+  }
+  return(RMSE_total) # return data frame
+}
+results <- f(model) # Store results in data frame
+
+
 ```
 
 
@@ -93,51 +91,11 @@ z <- unlist(model)
 
 
 
-```{r}
-m1 <- lm(Balance ~ 1, data=credit_train)
-m1F <- makeFun(m1)
-RMSE_test[1] <-sqrt(mean(m1F(credit_test))^2)
-RMSE_train[1] <- sqrt(mean(m1F(credit_train))^2)
 
-m2 <- lm(Balance ~ Income, data=credit_train)
-m2F <- makeFun(m2)
-RMSE_test[2] <-sqrt(mean(m2F(credit_test$Income))^2)
-RMSE_train[2] <- sqrt(mean(m2F(credit_train$Income))^2)
-
-m3 <- lm(Balance ~ Income + Limit, data=credit_train)
-m3F <- makeFun(m3)
-RMSE_test[3] <-sqrt(mean(m3F(credit_test$Income,credit_test$Limit))^2)
-RMSE_train[3] <- sqrt(mean(m3F(credit_train$Income,credit_train$Limit))^2)
-
-m4 <- lm(Balance ~ Income + Limit + Rating, data=credit_train)
-m4F <- makeFun(m4)
-RMSE_test[4] <-sqrt(mean(m4F(credit_test$Income,credit_test$Limit,credit_test$Rating))^2)
-RMSE_train[4] <- sqrt(mean(m4F(credit_train$Income,credit_train$Limit,credit_train$Rating))^2)
-
-m5 <- lm(Balance ~ Income + Limit + Rating+ Age, data=credit_train)
-m5F <- makeFun(m5)
-RMSE_test[5] <-sqrt(mean(m5F(credit_test$Income,credit_test$Limit,credit_test$Rating,credit_test$Age))^2)
-RMSE_train[5] <- RMSE(m5F(credit_train$Income,credit_train$Limit,credit_train$Rating,credit_train$Age))
-
-m6 <- lm(Balance ~ Income + Limit + Rating+ Age+Cards, data=credit_train)
-m6F <- makeFun(m6)
-RMSE_test[6] <-sqrt(mean(m6F(credit_test$Income,credit_test$Limit,credit_test$Rating,credit_test$Age,credit_test$Cards))^2)
-RMSE_train[6] <- sqrt(mean(m6F(credit_train$Income,credit_train$Limit,credit_train$Rating,credit_train$Age,credit_train$Cards))^2)
-
-m7 <- lm(Balance ~ Income + Limit + Rating+ Age+Cards+Education, data=credit_train)
-m7F <- makeFun(m7)
-RMSE_test[7] <-sqrt(mean(m7F(credit_test$Income,credit_test$Limit,credit_test$Rating,credit_test$Age,credit_test$Cards,credit_test$Education))^2)
-RMSE_train[7] <- sqrt(mean(m7F(credit_train$Income,credit_train$Limit,credit_train$Rating,credit_train$Age,credit_train$Cards,credit_train$Education))^2)
-```
 
 
 
 ```{r}
-results <- data_frame(
-  num_coefficients = 1:7,
-  RMSE_train,
-  RMSE_test
-) 
 
 # Some cleaning of results
 results <- results %>% 
@@ -158,9 +116,11 @@ ggplot(results, aes(x=num_coefficients, y=RMSE, col=type)) +
 
 # Interpret the graph
 
-The test data performs at a lower RMSE only for the first two predictors then the training data is lower until they are equal at the 4th predictor point.  From there, the RMSE test data grows much more rapidly, while the training data score actually improves.
+The test data performs at a lower RMSE only for the first two predictors.  After that, the RMSE test data grows much more rapidly, while the training data RMSE stays the same regardless of predictors added. Since our train data comes from such a small smaple, we have much more variability from the fitted model as we add predictors.This causes the much larger test dataset to perform poorly.
 
-This is a result of overfitting, as the training data is unlikely to be truly outperforming the test set.  In other words, since we are fitting the model same data that we trained with, we are seeing the model flex to fit the original data very closely. Our test data performs poorly as the model reflects the training data too closely.
+For the train set, overfitting examines a low RMSE despite poor predictive performance on the test set. Since we are fitting the model same data that we trained with for the training data, we are seeing the model flex to fit the original data very closely.
+
+The reason we see a constant RMSE for predicting train on training data is because it will always make prediction values based on the same observed values, which will result in the same RMSE because the variability of the data will not change regardless of which model we are fitting. In other words, we are always placing a line about the same set of points that we have explicitly geneated generated that same line with.
 
 
 
@@ -179,50 +139,11 @@ credit_test <- credit %>%
 ```
 
 ```{r}
-m1 <- lm(Balance ~ 1, data=credit_train)
-m1F <- makeFun(m1)
-RMSE_test[1] <-sqrt(mean(m1F(credit_test))^2)
-RMSE_train[1] <- sqrt(mean(m1F(credit_train))^2)
-
-m2 <- lm(Balance ~ Income, data=credit_train)
-m2F <- makeFun(m2)
-RMSE_test[2] <-sqrt(mean(m2F(credit_test$Income))^2)
-RMSE_train[2] <- sqrt(mean(m2F(credit_train$Income))^2)
-
-m3 <- lm(Balance ~ Income + Limit, data=credit_train)
-m3F <- makeFun(m3)
-RMSE_test[3] <-sqrt(mean(m3F(credit_test$Income,credit_test$Limit))^2)
-RMSE_train[3] <- sqrt(mean(m3F(credit_train$Income,credit_train$Limit))^2)
-
-m4 <- lm(Balance ~ Income + Limit + Rating, data=credit_train)
-m4F <- makeFun(m4)
-RMSE_test[4] <-sqrt(mean(m4F(credit_test$Income,credit_test$Limit,credit_test$Rating))^2)
-RMSE_train[4] <- sqrt(mean(m4F(credit_test$Income,credit_test$Limit,credit_test$Rating))^2)
-
-m5 <- lm(Balance ~ Income + Limit + Rating+ Age, data=credit_train)
-m5F <- makeFun(m5)
-RMSE_test[5] <-sqrt(mean(m5F(credit_test$Income,credit_test$Limit,credit_test$Rating,credit_test$Age))^2)
-RMSE_train[5] <- sqrt(mean(m5F(credit_train$Income,credit_train$Limit,credit_train$Rating,credit_train$Age))^2)
-
-m6 <- lm(Balance ~ Income + Limit + Rating+ Age+Cards, data=credit_train)
-m6F <- makeFun(m6)
-RMSE_test[6] <-sqrt(mean(m6F(credit_test$Income,credit_test$Limit,credit_test$Rating,credit_test$Age,credit_test$Cards))^2)
-RMSE_train[6] <- sqrt(mean(m6F(credit_train$Income,credit_train$Limit,credit_train$Rating,credit_train$Age,credit_train$Cards))^2)
-
-m7 <- lm(Balance ~ Income + Limit + Rating+ Age+Cards+Education, data=credit_train)
-m7F <- makeFun(m7)
-RMSE_test[7] <-sqrt(mean(m7F(credit_test$Income,credit_test$Limit,credit_test$Rating,credit_test$Age,credit_test$Cards,credit_test$Education))^2)
-RMSE_train[7] <- sqrt(mean(m7F(credit_train$Income,credit_train$Limit,credit_train$Rating,credit_train$Age,credit_train$Cards,credit_train$Education))^2)
+results <- f(model)
 ```
 
 
 ```{r}
-results <- data_frame(
-  num_coefficients = 1:7,
-  RMSE_train,
-  RMSE_test
-) 
-
 # Some cleaning of results
 results <- results %>% 
   # More intuitive names:
@@ -240,21 +161,11 @@ ggplot(results, aes(x=num_coefficients, y=RMSE, col=type)) +
 ```
 ```
 
-With a large train and a small test set, we see an almost horizonal mirror image of the previously observed graph.  Critcally, the test data starts off at a very high RMSE and improves with each additional coefficient added.  The test and train are still roughly equal at the addition of the 4th predictor but at this point, the training data's RMSE increases.
+With a large train and a small test set, we see an almost horizonal mirror image of the previously observed graph.  Critcally, the test data starts off at a very high RMSE but improves with each additional coefficient added.  In this scenario, we are essentially training on the entire dataset so our fitted model will have strong OOS predictability to the test data when a large number of coefficients are added.  
 
-In this scenario, we are essentially training on the entire dataset so our fitted model will overfit the test data when a large number of coefficients is data.  On the other hand, the attempt to train on such a large part of the sample highlights the noise in the data once we end up with a large number of coeffients.
-
-```{r}
-mod <- list()
-x <- colnames(credit)[3:8]
-
-for (i in 1:7) {
-  mod <- lm(Balance ~ poly(x,i),data=credit)
-  print(summary(mod))
-}
-```
-
-```{r}
+The training data's RMSE still is constant but at a much higher RMSE since we are using a larger dataset with more noise.
 
 
-```
+
+`
+
