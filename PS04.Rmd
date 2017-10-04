@@ -61,7 +61,7 @@ credit_test <- credit %>%
 
 ```{r}
 RMSE <- function(x) { # simple function for RMSE
-  r <- sqrt(mean(x)^2)
+  r <- sqrt(mean(x^2))
   return(r)
 }
 ```
@@ -73,8 +73,8 @@ RMSE_total <- data.frame(num_coefficients = 1:7, RMSE_test, RMSE_train) # Create
 
 f <- function(list)  {
   for (i in 1:7) { # predict and calcualte RMSE for all 7 models
-    RMSE_test[i] <- RMSE(predict(lm(list[[i]],data=credit_train),credit_test)) # Store test RMSE
-    RMSE_train[i] <- RMSE(predict(lm(list[[i]],data=credit_train),credit_train)) # Store train RMSE 
+    RMSE_test[i] <- RMSE(predict(lm(list[[i]],data=credit_train),credit_test) - credit_test$Balance) # Store test RMSE
+    RMSE_train[i] <- RMSE(predict(lm(list[[i]],data=credit_train),credit_train) - credit_train$Balance) # Store train RMSE 
     RMSE_total[i,2] <- RMSE_test[i] # Add to data frame
     RMSE_total[i,3] <- RMSE_train[i]
   }
@@ -116,11 +116,7 @@ ggplot(results, aes(x=num_coefficients, y=RMSE, col=type)) +
 
 # Interpret the graph
 
-The test data performs at a lower RMSE only for the first two predictors.  After that, the RMSE test data grows much more rapidly, while the training data RMSE stays the same regardless of predictors added. Since our train data comes from such a small smaple, we have much more variability from the fitted model as we add predictors.This causes the much larger test dataset to perform poorly.
-
-For the train set, overfitting examines a low RMSE despite poor predictive performance on the test set. Since we are fitting the model same data that we trained with for the training data, we are seeing the model flex to fit the original data very closely.
-
-The reason we see a constant RMSE for predicting train on training data is because it will always make prediction values based on the same observed values, which will result in the same RMSE because the variability of the data will not change regardless of which model we are fitting. In other words, we are always placing a line about the same set of points that we have explicitly geneated generated that same line with.
+We see that the test data has a higher RMSE for all predictors when compared to our training set, which makes sense given that the train is being testing on the same data.  Howewever, we do see a fairly similar level of performance for both the 3 and 4 coefficient models (the model with 3 predictors seems to be the optimal model from a RMSE and simplification stand point).  After adding a 5th, the test set performs worse and the training data performs "better" in terms of RMSE.  However, at 5 predictors, the train predicts are doing well as a result of overfitting.
 
 
 
@@ -159,13 +155,7 @@ ggplot(results, aes(x=num_coefficients, y=RMSE, col=type)) +
   geom_line() + 
   labs(x="# of coefficients", y="RMSE", col="Data used to evaluate \nperformance of fitted model")
 ```
-```
 
-With a large train and a small test set, we see an almost horizonal mirror image of the previously observed graph.  Critcally, the test data starts off at a very high RMSE but improves with each additional coefficient added.  In this scenario, we are essentially training on the entire dataset so our fitted model will have strong OOS predictability to the test data when a large number of coefficients are added.  
+Here we have a smaller gap between the train and test set RMSE, as the train (though still evaluated on known info) and test predictions are built on a much more robust training set than before (380 v. 20 points).  
 
-The training data's RMSE still is constant but at a much higher RMSE since we are using a larger dataset with more noise.
-
-
-
-`
-
+Although this seems positive for our test predictions, we start to see issues with overfitting because of the small size of the test set around the 4th predictor added. At that point, the RMSE of the test set becomes lower than our training, indicating too close of a fit.
